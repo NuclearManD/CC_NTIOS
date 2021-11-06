@@ -1,0 +1,6 @@
+
+devices = {}
+
+function initDevices()
+  
+end    

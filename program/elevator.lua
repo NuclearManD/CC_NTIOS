@@ -1,0 +1,2 @@
+
+rednet.broadcast("MOVE", "elevator")
