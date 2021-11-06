@@ -45,3 +45,12 @@ end
 
 print("Starting drivers")
 
+-- What do we want to do here?
+
+if fs.isDir("/ntios/autorun") then
+    print("Running startup programs")
+    local files = fs.list("/ntios/autorun")
+    for _, file in ipairs(files) do
+        shell.run("bg /ntios/autorun/"..file)
+    end
+end
