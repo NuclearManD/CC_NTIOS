@@ -17,7 +17,8 @@ ACCEPTED_DEVICES = {
     ["capacitor_mv"] = "capacitor",
     ["mixer"] = "mixer",
     ["engineersdecor:te_small_electrical_furnace"] = "furnace",
-    ["thermal:machine_furnace"] = "furnace"
+    ["thermal:machine_furnace"] = "furnace",
+    ["diesel_generator"] = "diesel_generator"
 }
 
 -- Update system path to allow use of NTIOS programs
