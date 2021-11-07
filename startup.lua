@@ -23,6 +23,9 @@ ACCEPTED_DEVICES = {
 
 -- Update system path to allow use of NTIOS programs
 shell.setPath(shell.path()..":/ntios/program")
+if turtle then
+    shell.setPath(shell.path()..":/ntios/turtlePrograms")
+end
 
 print("Starting NTIOS version "..NTIOS_VERSION)
 print("Loading APIs")
