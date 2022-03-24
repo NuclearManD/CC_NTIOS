@@ -1,4 +1,3 @@
-
 if not turtle then
     printError("Requires a Turtle")
     return
@@ -6,6 +5,9 @@ end
 
 local tArgs = { ... }
 if #tArgs ~= 1 then
+    print("Will dig a hole down to bedrock,")
+    print("Go up 5 blocks,")
+    print("then mine a tunnel from there.")
     print("Usage: tunnel <length>")
     return
 end
@@ -17,10 +19,31 @@ if length < 1 then
     return
 end
 
-op = mining.MiningOperation(true)
+op = mining.MiningOperation()
 
--- Dig a tunnel
+print("Descending...")
+local depth = 0
+while op.tryDown() do
+    depth = depth + 1
+end
+
+depth = depth - 5
+for n=1,5 do
+    op.tryUp()
+end
+
+print("Descended "..tostring(depth).." meters.")
+
+print("Tunnelling...")
+
 op.tunnelUntilFull(length, 3, true)
+
+print("Ascending...")
+while depth > 0 do
+    if op.tryUp() then
+        depth = depth - 1
+    end
+end
 
 -- Deposit in chest (if present)
 op.unload(false)
