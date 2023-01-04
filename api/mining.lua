@@ -46,7 +46,6 @@ local function collect(this)
 end
 
 local function tryDig(this, dontMineGangue)
-    print(this)
     if dontMineGangue == nil then
         dontMineGangue = false
     end
