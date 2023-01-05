@@ -6,9 +6,9 @@ end
 local tArgs = { ... }
 if #tArgs ~= 1 then
     print("Will dig a hole down to bedrock,")
-    print("Go up 5 blocks,")
+    print("Go up 9 blocks,")
     print("then mine a tunnel from there.")
-    print("Usage: tunnel <length>")
+    print("Usage: depthStripmine <length>")
     return
 end
 
@@ -27,9 +27,10 @@ while op.tryDown() do
     depth = depth + 1
 end
 
-depth = depth - 5
-for n=1,5 do
-    op.tryUp()
+for n=1,9 do
+    if op.tryUp() then
+        depth = depth - 1
+    end
 end
 
 print("Descended "..tostring(depth).." meters.")
