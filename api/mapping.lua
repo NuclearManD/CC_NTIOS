@@ -1,9 +1,18 @@
 
 
+-- Note that the Y and Z axes are swapped vs minecraft coordinates.
+-- On this program, Z is up and Y is horizontal.  Z can also be thought
+-- of as the "layer" of the map.  Z can even be a string, for instance
+-- your layer names may be: "underground", "surface", "sky", etc
+
+-- The scale factor is just metadata saved in the map, to tell how big a tile is.
+-- With a scale of 1, a tile is just one block.  A scale of 16, and a tile is a chunk.
+-- The scale specifies the number of blocks per tile on each axis.
+
 
 local function setTile(this, x, y, z, color, material)
-    x = math.floor(x / this.data.scale)
-    y = math.floor(y / this.data.scale)
+    --x = math.floor(x / this.data.scale)
+    --y = math.floor(y / this.data.scale)
     if this.data.layers[z] == nil then
         this.data.layers[z] = {}
     end
@@ -17,8 +26,8 @@ local function setTile(this, x, y, z, color, material)
 end
 
 local function getTile(this, x, y, z)
-    x = math.floor(x / this.data.scale)
-    y = math.floor(y / this.data.scale)
+    --x = math.floor(x / this.data.scale)
+    --y = math.floor(y / this.data.scale)
     if this.data.layers[z] == nil then
         return nil
     end
@@ -56,8 +65,6 @@ local function getRegion(this, name)
 end
 
 local function tilesToBitmap(this, centerx, centery, z, w, h)
-    centerx = math.floor(centerx / this.data.scale)
-    centery = math.floor(centery / this.data.scale)
     local text = ""
     local y1 = centery + math.floor(h/2)
     local y2 = y1 - h + 1
@@ -68,7 +75,7 @@ local function tilesToBitmap(this, centerx, centery, z, w, h)
         local nLastChar = 0
         for x = x1, x2 do
             local c = " "
-            local tile = this.getTile(x * this.data.scale, y * this.data.scale, z)
+            local tile = this.getTile(x, y, z)
             if tile then
                 c = imaging.colorToChar(tile.color)
             end
@@ -107,7 +114,7 @@ function Map(scale)
 end
     
 function deserializeMap(string)
-    data = textutils.deserializeJSON(string)
+    data = textutils.unserializeJSON(string)
     if data.layers == nil then
         data.layers = {}
     end
