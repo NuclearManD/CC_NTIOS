@@ -195,7 +195,8 @@ end
 
 function renderMap()
     local nfp = map.tilesToNfpImage(centerX, centerY, layer, mapWidth, mapHeight)
-    imaging.drawNfpImage(nfp, 1, 1, colors.black, mapWidth)
+    local text = map.waypointsToText(centerX, centerY, layer, mapWidth, mapHeight)
+    imaging.drawNfpImageWithText(nfp, text, 1, 1, colors.black, mapWidth)
 end
 
 

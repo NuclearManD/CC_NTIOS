@@ -64,3 +64,57 @@ function drawNfpImage(image, x, y, backgroundColor, w)
         y = y + 1
     end
 end
+
+function drawNfpImageWithText(image, text, x, y, backgroundColor, w)
+    local lines = image:gmatch("([^\n]+)")
+    local textLines = {}
+    for line in text:gmatch("([^\n]+)") do
+        textLines[#textLines + 1] = line
+    end
+
+    if w == nil then
+        w = 0
+        for line in lines do
+            if #line > w then
+                w = #line
+            end
+        end
+    end
+
+    local lineNumber = 1
+    for line in lines do
+        if line ~= "" then
+            for i = 1, #line do
+                local c = line:byte(i,i)
+                local pixel = tColourLookup[c]
+                local textChar = " "
+                if lineNumber <= #textLines then
+                    textChar = textLines[lineNumber]:sub(i, i)
+                    if textChar == "" then
+                        textChar = " "
+                    end
+                end
+                if pixel or textChar ~= " " then
+                    term.setBackgroundColour( pixel or backgroundColor )
+                    term.setCursorPos(x + i - 1, y)
+                    term.write(textChar)
+                elseif backgroundColor then
+                    term.setBackgroundColour( backgroundColor )
+                    term.setTextColour( colours.grey )
+                    term.setCursorPos(x + i - 1, y)
+                    term.write("\127")
+                end
+            end
+            if backgroundColor and w > #line then
+                for i = #line + 1, w do
+                    term.setBackgroundColour( backgroundColor )
+                    term.setTextColour( colours.grey )
+                    term.setCursorPos(x + i - 1, y)
+                    term.write("\127")
+                end
+            end
+        end
+        y = y + 1
+        lineNumber = lineNumber + 1
+    end
+end
