@@ -11,10 +11,11 @@ if #args == 1 and (args[1] == "-h" or args[1] == "--help") then
     print("  CTRL then X  Exit")
     print("  CTRL then S  Save")
     print("  CTRL then P  Print (if a printer is found)")
+    print("  G            Go to position (opens a prompt)")
     print("  W            Waypoint Tool")
     print("  D            Tile Draw Tool")
     print("  Q            Stop using current tool")
-    print("  Arrow Keys   Navigation")
+    print("  Arrow Keys   Navigation (dragging the map also works)")
     return
 end
 
@@ -67,7 +68,7 @@ end
 
 function clickToTilePos(x, y)
     x = centerX - math.floor(w/2) + x
-    y = centerY + math.floor(h/2) - y
+    y = centerY - math.floor(h/2) + y
     return x, y
 end
 
@@ -107,9 +108,53 @@ function promptForText(prompt)
     promptWindow.write(prompt)
     promptWindow.setCursorPos(2, 4)
     promptWindow.write("> ")
+    term.setBackgroundColor(colors.blue)
+    term.setTextColor(colors.gray)
     result = read()
     render()
     return result
+end
+
+
+function promptForPosition(prompt)
+    local winW = w - 2
+    local winH = 6
+    local winX = math.floor((w - winW) / 2)
+    local winY = math.floor((h - winH) / 2)
+    local promptWindow = window.create(term.current(), winX, winY, winW, winH)
+    promptWindow.setBackgroundColor(colors.blue)
+    promptWindow.setTextColor(colors.white)
+    promptWindow.clear()
+    promptWindow.setCursorPos(2, 2)
+    promptWindow.write(prompt)
+    promptWindow.setCursorPos(2, 4)
+    promptWindow.write("X ")
+    term.setBackgroundColor(colors.blue)
+    term.setTextColor(colors.gray)
+    local x = tonumber(read())
+    if x == nil then
+        promptWindow.setCursorPos(2, 4)
+        promptWindow.write("Cancelled.  Press enter to continue.")
+        promptWindow.setCursorPos(2, 5)
+        read()
+        render()
+        return nil, nil
+    end
+        
+    promptWindow.setCursorPos(2, 5)
+    promptWindow.write("Y ")
+    local y = tonumber(read())
+    if y == nil then
+        promptWindow.setCursorPos(2, 4)
+        promptWindow.write("Cancelled.  Press enter to continue.")
+        promptWindow.setCursorPos(2, 5)
+        read()
+        render()
+        return nil, nil
+    end
+
+    -- We don't render here because the caller likely will do so anyway
+    return x, y
 end
 
 
@@ -165,7 +210,7 @@ function renderInterface()
             term.write(" P - Print")
         end
     else
-        if toolSelected == "None" and message then
+        if message then
             term.write(message)
         else
             term.write("Tool selected: " .. toolSelected)
@@ -237,7 +282,15 @@ function handleKeyUp(key)
             toolSelected = "Tile Drawing"
         elseif key == keys.q then
             toolSelected = "None"
+        elseif key == keys.g then
+            x, y = promptForPosition("Coords to go to:")
+            if x and y then
+                centerX = math.floor(x / map.data.scale)
+                centerY = math.floor(y / map.data.scale)
+                render()
+            end
         end
+        message = nil
     end
 end
 
@@ -249,6 +302,16 @@ function handleOtherEvent(evt_type, a, b, c)
             isSaveMenuOpen = not isSaveMenuOpen
             renderInterface()
         end
+    end
+end
+
+
+function inspectTile(tileX, tileY)
+    local waypoint = map.getWaypointByPosition(tileX, tileY, layer)
+    if waypoint then
+        message = "'" .. waypoint .. "' at " .. tostring(tileX*16) .. ", " .. tostring(tileY*16)
+    else
+        message = "Clicked on " .. tostring(tileX*16) .. ", " .. tostring(tileY*16)
     end
 end
 
@@ -268,10 +331,7 @@ function handleMouseUp(x, y)
                 isSaved = false
             end
         else
-            local waypoint = map.getWaypointByPosition(tileX, tileY, layer)
-            if waypoint then
-                message = "'" .. waypoint .. "' at " .. tostring(tileX*16) .. ", " .. tostring(tileY*16)
-            end
+            inspectTile(tileX, tileY)
         end
     elseif y >= h - 1 then
         isSaveMenuOpen = true
@@ -295,7 +355,7 @@ function handleMouseClick(x, y)
             break
         elseif evt_type == "mouse_drag" and a == 1 then
             local dx = x - b
-            local dy = c - y
+            local dy = y - c
             x = b
             y = c
             centerX = centerX + dx
@@ -312,8 +372,13 @@ end
 while not shouldExit do
     render()
     evt_type, a, b, c = os.pullEvent()
-    if evt_type == "mouse_click" and a == 1 then
-        handleMouseClick(b, c)
+    if evt_type == "mouse_click" then
+        if a == 1 then
+            handleMouseClick(b, c)
+        elseif a == 2 then
+            local tileX, tileY = clickToTilePos(b, c)
+            inspectTile(tileX, tileY)
+        end
     else
         handleOtherEvent(evt_type, a, b, c)
     end

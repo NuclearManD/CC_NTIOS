@@ -76,11 +76,11 @@ end
 
 local function tilesToNfpImage(this, centerx, centery, z, w, h)
     local text = ""
-    local y1 = centery + math.floor(h/2)
-    local y2 = y1 - h + 1
+    local y1 = centery - math.floor(h/2)
+    local y2 = y1 + h - 1
     local x1 = centerx - math.floor(w/2)
     local x2 = x1 + w - 1
-    for y = y1, y2, -1 do
+    for y = y1, y2 do
         local sLine = ""
         for x = x1, x2 do
             local c = " "
@@ -97,11 +97,11 @@ end
 
 local function waypointsToText(this, centerx, centery, z, w, h)
     local text = ""
-    local y1 = centery + math.floor(h/2)
-    local y2 = y1 - h + 1
+    local y1 = centery - math.floor(h/2)
+    local y2 = y1 + h - 1
     local x1 = centerx - math.floor(w/2)
     local x2 = x1 + w - 1
-    for y = y1, y2, -1 do
+    for y = y1, y2 do
         local line = ""
         local waypointCharIndex = nil
         local waypointName = nil
