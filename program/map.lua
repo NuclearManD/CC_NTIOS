@@ -16,6 +16,9 @@ if #args == 1 and (args[1] == "-h" or args[1] == "--help") then
     print("  D            Tile Draw Tool")
     print("  Q            Stop using current tool")
     print("  Arrow Keys   Navigation (dragging the map also works)")
+    print()
+    print("Right-clicking on a tile will inspect the tile and")
+    print("show the tile coordinates, regardless the selected tool.")
     return
 end
 
@@ -127,30 +130,68 @@ function promptForPosition(prompt)
     promptWindow.clear()
     promptWindow.setCursorPos(2, 2)
     promptWindow.write(prompt)
+
     promptWindow.setCursorPos(2, 4)
     promptWindow.write("X ")
     term.setBackgroundColor(colors.blue)
     term.setTextColor(colors.gray)
-    local x = tonumber(read())
+    local xStr = read()
+    local x = tonumber(xStr)
     if x == nil then
-        promptWindow.setCursorPos(2, 4)
-        promptWindow.write("Cancelled.  Press enter to continue.")
-        promptWindow.setCursorPos(2, 5)
-        read()
-        render()
-        return nil, nil
+        if xStr == "gps" then
+            x = xStr
+        else
+            promptWindow.setCursorPos(2, 4)
+            promptWindow.write("Cancelled.  Press enter to continue.")
+            promptWindow.setCursorPos(2, 5)
+            read()
+            render()
+            return nil, nil
+        end
     end
         
     promptWindow.setCursorPos(2, 5)
     promptWindow.write("Y ")
-    local y = tonumber(read())
+    term.setBackgroundColor(colors.blue)
+    term.setTextColor(colors.gray)
+    local yStr = read()
+    local y = tonumber(y)
     if y == nil then
+        if yStr == "gps" then
+            y = yStr
+        else
+            promptWindow.setCursorPos(2, 4)
+            promptWindow.write("Cancelled.  Press enter to continue.")
+            promptWindow.setCursorPos(2, 5)
+            read()
+            render()
+            return nil, nil
+        end
+    end
+    
+    if x == "gps" or y == "gps" then
         promptWindow.setCursorPos(2, 4)
-        promptWindow.write("Cancelled.  Press enter to continue.")
-        promptWindow.setCursorPos(2, 5)
-        read()
-        render()
-        return nil, nil
+        promptWindow.clearLine()
+        promptWindow.write("Locating...")
+
+        local gpsX, gpsY, gpsZ = gps.locate()
+        if gpsX == nil then
+            promptWindow.setCursorPos(2, 4)
+            promptWindow.clearLine()
+            promptWindow.write("GPS Failed.  Press enter to continue.")
+            promptWindow.setCursorPos(2, 5)
+            read()
+            render()
+            return nil, nil
+        end
+
+        -- Note that Z and Y are swapped: Minecraft Y is map Z, and Minecraft Z is map Y.
+        if x == "gps" then
+            x = gpsX
+        end
+        if y == "gps" then
+            y = gpsZ
+        end
     end
 
     -- We don't render here because the caller likely will do so anyway
