@@ -47,6 +47,16 @@ local function setWaypoint(this, x, y, z, name, metadata)
     this.data.waypoints[name] = waypoint
 end
 
+local function getWaypointByPosition(this, x, y, z)
+    for name, position in pairs(this.data.waypoints) do
+        if position.x == x and position.y == y then
+            if z == nil or z == position.z then
+                return name
+            end
+        end
+    end
+end
+
 local function addRegion(this, name, polygon, metadata)
     local region = {}
     region.name = name
@@ -64,7 +74,7 @@ local function getRegion(this, name)
     end
 end
 
-local function tilesToBitmap(this, centerx, centery, z, w, h)
+local function tilesToNfpImage(this, centerx, centery, z, w, h)
     local text = ""
     local y1 = centery + math.floor(h/2)
     local y2 = y1 - h + 1
@@ -72,7 +82,6 @@ local function tilesToBitmap(this, centerx, centery, z, w, h)
     local x2 = x1 + w - 1
     for y = y1, y2, -1 do
         local sLine = ""
-        local nLastChar = 0
         for x = x1, x2 do
             local c = " "
             local tile = this.getTile(x, y, z)
@@ -86,6 +95,37 @@ local function tilesToBitmap(this, centerx, centery, z, w, h)
     return text
 end
 
+local function waypointsToText(this, centerx, centery, z, w, h)
+    local text = ""
+    local y1 = centery + math.floor(h/2)
+    local y2 = y1 - h + 1
+    local x1 = centerx - math.floor(w/2)
+    local x2 = x1 + w - 1
+    for y = y1, y2, -1 do
+        local line = ""
+        local waypointCharIndex = nil
+        local waypointName = nil
+        local i = 1
+        for x = x1, x2 do
+            local c = " "
+            local waypoint = this.getWaypointByPosition(x, y, z)
+            if waypoint then
+                c = "*"
+                waypointName = waypoint
+                waypointCharIndex = i
+            end
+            line = line .. c
+            i = i + 1
+        end
+        if waypointCharIndex then
+            line = line:sub(1, waypointCharIndex + 1) .. waypointName
+        end
+        text = text .. line .. "\n"
+    end
+    return text
+end
+
+
 local function initMap(data)
     local this = {}
 
@@ -98,7 +138,9 @@ local function initMap(data)
     this.getRegion   = function(...) return getRegion(this, ...) end
     this.serialize   = function(...) return serialize(this, ...) end
 
-    this.tilesToBitmap = function(...) return tilesToBitmap(this, ...) end
+    this.tilesToNfpImage = function(...) return tilesToNfpImage(this, ...) end
+    this.waypointsToText = function(...) return waypointsToText(this, ...) end
+    this.getWaypointByPosition = function(...) return getWaypointByPosition(this, ...) end
 
     return this
 end

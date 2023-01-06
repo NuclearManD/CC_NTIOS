@@ -10,6 +10,7 @@ if #args == 1 and (args[1] == "-h" or args[1] == "--help") then
     print("Key controls:")
     print("  CTRL then X  Exit")
     print("  CTRL then S  Save")
+    print("  CTRL then P  Print (if a printer is found)")
     print("  W            Waypoint Tool")
     print("  D            Tile Draw Tool")
     print("  Q            Stop using current tool")
@@ -51,6 +52,7 @@ local isSaved = true
 local toolSelected = "None"
 local shouldExit = false
 local selectedColor = colors.lime
+local message = nil
 
 
 function saveMap()
@@ -90,7 +92,57 @@ function confirmExitWithoutSaving()
     render()
     return key == keys.y
 end
-    
+
+
+function promptForText(prompt)
+    local winW = w - 2
+    local winH = 5
+    local winX = math.floor((w - winW) / 2)
+    local winY = math.floor((h - winH) / 2)
+    local promptWindow = window.create(term.current(), winX, winY, winW, winH)
+    promptWindow.setBackgroundColor(colors.blue)
+    promptWindow.setTextColor(colors.white)
+    promptWindow.clear()
+    promptWindow.setCursorPos(2, 2)
+    promptWindow.write(prompt)
+    promptWindow.setCursorPos(2, 4)
+    promptWindow.write("> ")
+    result = read()
+    render()
+    return result
+end
+
+
+function printMap()
+    local printer = peripheral.find( "printer" )
+    if not printer then
+        message = "No printer found"
+        return
+    elseif printer.getInkLevel() < 1 then
+        message = "Printer out of ink"
+        return
+    elseif printer.getPaperLevel() < 1 then
+        message = "Printer out of paper"
+        return
+    end
+
+    if printer.newPage() then
+        local paperW, paperH = printer.getPageSize()
+        printer.setPageTitle(path)
+        local text = map.waypointsToText(centerX, centerY, layer, paperW, paperH)
+        local lineNumber = 1
+        for line in text:gmatch("([^\n]+)") do
+            printer.setCursorPos(1, lineNumber)
+            printer.write(line)
+            lineNumber = lineNumber + 1
+        end
+        if printer.endPage() then
+            message = "Printed"
+            return
+        end
+    end
+    message = "Unknown printing error"
+end
 
 
 function renderInterface()
@@ -109,8 +161,15 @@ function renderInterface()
     term.clearLine()
     if isSaveMenuOpen then
         term.write("X - eXit  S - Save")
+        if peripheral.find("printer") then
+            term.write(" P - Print")
+        end
     else
-        term.write("Tool selected: " .. toolSelected)
+        if toolSelected == "None" and message then
+            term.write(message)
+        else
+            term.write("Tool selected: " .. toolSelected)
+        end
     end
 
     if toolSelected == "Tile Drawing" then
@@ -135,7 +194,7 @@ end
 
 
 function renderMap()
-    local nfp = map.tilesToBitmap(centerX, centerY, layer, mapWidth, mapHeight)
+    local nfp = map.tilesToNfpImage(centerX, centerY, layer, mapWidth, mapHeight)
     imaging.drawNfpImage(nfp, 1, 1, colors.black, mapWidth)
 end
 
@@ -165,6 +224,9 @@ function handleKeyUp(key)
             end
         elseif key == keys.s then
             saveMap()
+            isSaveMenuOpen = false
+        elseif key == keys.p then
+            printMap()
             isSaveMenuOpen = false
         end
     else
@@ -198,10 +260,21 @@ function handleMouseUp(x, y)
         if toolSelected == "Tile Drawing" then
             map.setTile(tileX, tileY, layer, selectedColor)
             isSaved = false
+        elseif toolSelected == "Waypoint" then
+            local waypointName = promptForText("New waypoint name:")
+            if waypointName ~= "" then
+                map.setWaypoint(tileX, tileY, layer, waypointName)
+                isSaved = false
+            end
+        else
+            local waypoint = map.getWaypointByPosition(tileX, tileY, layer)
+            if waypoint then
+                message = "'" .. waypoint .. "' at " .. tostring(tileX*16) .. ", " .. tostring(tileY*16)
+            end
         end
-    elseif x >= w - 1 then
+    elseif y >= h - 1 then
         isSaveMenuOpen = true
-    elseif y <= 16 then
+    elseif x >= w - 1 then
         -- Our click is on the right-hand-side bar
         if toolSelected == "Tile Drawing" then
             selectedColor = 2^(y-1)
