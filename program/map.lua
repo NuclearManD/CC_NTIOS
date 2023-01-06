@@ -12,6 +12,10 @@ if #args == 1 and (args[1] == "-h" or args[1] == "--help") then
     print("  CTRL then S  Save")
     print("  CTRL then P  Print (if a printer is found)")
     print("  G            Go to position (opens a prompt)")
+    print("  L            Go to the computer's GPS position. Drops an")
+    print("               '@' symbol on the tile the computer is on.")
+    print("  F            Follow Me mode: uses GPS to make the map")
+    print("               move with the player.")
     print("  W            Waypoint Tool")
     print("  D            Tile Draw Tool")
     print("  Q            Stop using current tool")
@@ -57,6 +61,7 @@ local toolSelected = "None"
 local shouldExit = false
 local selectedColor = colors.lime
 local message = nil
+local followModeEnabled = false
 
 
 function saveMap()
@@ -72,6 +77,13 @@ end
 function clickToTilePos(x, y)
     x = centerX - math.floor(w/2) + x
     y = centerY - math.floor(h/2) + y
+    return x, y
+end
+
+
+function tilePosToScreenCoords(x, y)
+    x = x - centerX + math.floor(w/2)
+    y = y - centerY + math.floor(h/2)
     return x, y
 end
 
@@ -232,8 +244,8 @@ end
 
 
 function renderInterface()
-    term.setTextColour(colours.blue)
-    term.setBackgroundColour(colours.black)
+    term.setTextColour(colors.blue)
+    term.setBackgroundColour(colors.black)
 
     term.setCursorPos(1, h-1)
     term.clearLine()
@@ -268,7 +280,7 @@ function renderInterface()
 
         term.setCursorPos(w-1, 19)
         term.setBackgroundColour(selectedColor)
-        term.setTextColour( colours.white )
+        term.setTextColour( colors.white )
         term.write("\127\127")
     else
         for i=1,19 do
@@ -279,16 +291,63 @@ function renderInterface()
 end
 
 
-function renderMap()
+function renderMap(pinX, pinY, pinColor)
     local nfp = map.tilesToNfpImage(centerX, centerY, layer, mapWidth, mapHeight)
     local text = map.waypointsToText(centerX, centerY, layer, mapWidth, mapHeight)
     imaging.drawNfpImageWithText(nfp, text, 1, 1, colors.black, mapWidth)
+    if pinX and pinY then
+        if pinColor == nil then
+            pinColor = colors.blue
+        end
+        local pinX = math.floor(pinX / map.data.scale)
+        local pinY = math.floor(pinY / map.data.scale)
+        local x, y = tilePosToScreenCoords(pinX, pinY)
+        term.setCursorPos(x, y)
+        term.setTextColour(pinColor)
+        term.setBackgroundColour(colors.black)
+        term.write("@")
+    elseif followModeEnabled and lastGpsX and lastGpsY then
+        pinColor = colors.blue
+        local pinX = math.floor(lastGpsX / map.data.scale)
+        local pinY = math.floor(lastGpsY / map.data.scale)
+        local x, y = tilePosToScreenCoords(pinX, pinY)
+        term.setCursorPos(x, y)
+        term.setTextColour(pinColor)
+        term.setBackgroundColour(colors.black)
+        term.write("@")
+    end
 end
 
 
 function render()
     renderMap()
     renderInterface()
+end
+
+local lastGpsX = nil
+local lastGpsY = nil
+
+function goToGpsLocation()
+    x, _, y = gps.locate()
+    if x and y then
+        centerX = math.floor(x / map.data.scale)
+        centerY = math.floor(y / map.data.scale)
+        renderMap(x, y)
+        lastGpsX = x
+        lastGpsY = y
+    else
+        message = "GPS Failure"
+        followModeEnabled = false
+        renderMap(lastGpsX, lastGpsY, colors.red)
+        renderInterface()
+    end
+end
+
+function handleFollowMode()
+    if followModeEnabled then
+        goToGpsLocation()
+        os.startTimer(2)
+    end
 end
 
 function handleKeyUp(key)
@@ -317,6 +376,7 @@ function handleKeyUp(key)
             isSaveMenuOpen = false
         end
     else
+        message = nil
         if key == keys.w then
             toolSelected = "Waypoint"
         elseif key == keys.d then
@@ -330,8 +390,13 @@ function handleKeyUp(key)
                 centerY = math.floor(y / map.data.scale)
                 render()
             end
+        elseif key == keys.l then
+            goToGpsLocation()
+        elseif key == keys.f then
+            followModeEnabled = not followModeEnabled
+            handleFollowMode()
         end
-        message = nil
+        renderInterface()
     end
 end
 
@@ -343,6 +408,8 @@ function handleOtherEvent(evt_type, a, b, c)
             isSaveMenuOpen = not isSaveMenuOpen
             renderInterface()
         end
+    elseif evt_type == "timer" then
+        handleFollowMode()
     end
 end
 
@@ -354,6 +421,7 @@ function inspectTile(tileX, tileY)
     else
         message = "Clicked on " .. tostring(tileX*16) .. ", " .. tostring(tileY*16)
     end
+    renderInterface()
 end
 
 
@@ -365,11 +433,13 @@ function handleMouseUp(x, y)
         if toolSelected == "Tile Drawing" then
             map.setTile(tileX, tileY, layer, selectedColor)
             isSaved = false
+            render()
         elseif toolSelected == "Waypoint" then
             local waypointName = promptForText("New waypoint name:")
             if waypointName ~= "" then
                 map.setWaypoint(tileX, tileY, layer, waypointName)
                 isSaved = false
+                render()
             end
         else
             inspectTile(tileX, tileY)
@@ -380,6 +450,7 @@ function handleMouseUp(x, y)
         -- Our click is on the right-hand-side bar
         if toolSelected == "Tile Drawing" then
             selectedColor = 2^(y-1)
+            renderInterface()
         end
     end
 end
@@ -395,6 +466,7 @@ function handleMouseClick(x, y)
             end
             break
         elseif evt_type == "mouse_drag" and a == 1 then
+            followModeEnabled = false
             local dx = x - b
             local dy = y - c
             x = b
@@ -410,8 +482,9 @@ function handleMouseClick(x, y)
 end
 
 
+render()
 while not shouldExit do
-    render()
+    --render()
     evt_type, a, b, c = os.pullEvent()
     if evt_type == "mouse_click" then
         if a == 1 then
@@ -426,7 +499,7 @@ while not shouldExit do
 end
 
 
-term.setBackgroundColour(colours.black)
-term.setTextColour(colours.white)
+term.setBackgroundColour(colors.black)
+term.setTextColour(colors.white)
 term.clear()
 term.setCursorPos(1,1)
