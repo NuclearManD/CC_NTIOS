@@ -294,10 +294,10 @@ function MiningOperation(shouldPrint)
     return this
 end
 
-function refuel()
+function refuel(waitForFuel)
     local fuelLevel = turtle.getFuelLevel()
     if fuelLevel == "unlimited" or fuelLevel > 0 then
-        return
+        return true
     end
 
     function tryRefuel()
@@ -315,11 +315,16 @@ function refuel()
     end
 
     if not tryRefuel() then
-        print("Add more fuel to continue.")
-        while not tryRefuel() do
-            os.pullEvent("turtle_inventory")
+        if waitForFuel == true or waitForFuel == nil then
+            print("Add more fuel to continue.")
+            while not tryRefuel() do
+                os.pullEvent("turtle_inventory")
+            end
+            print("Resuming Tunnel.")
+            return true
         end
-        print("Resuming Tunnel.")
+        return false
     end
+    return true
 end
 

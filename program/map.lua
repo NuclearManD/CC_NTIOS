@@ -28,7 +28,7 @@ end
 
 local path = DEFAULT_PATH
 if #args == 1 then
-    path = shell.resolve(tArgs[1])
+    path = shell.resolve(args[1])
     -- Create .map files by default
     if not fs.exists( path ) and not string.find( path, "%." ) then
         path = path .. ".map"
