@@ -417,9 +417,9 @@ end
 function inspectTile(tileX, tileY)
     local waypoint = map.getWaypointByPosition(tileX, tileY, layer)
     if waypoint then
-        message = "'" .. waypoint .. "' at " .. tostring(tileX*16) .. ", " .. tostring(tileY*16)
+        message = "'" .. waypoint .. "' at " .. tostring(tileX*map.data.scale) .. ", " .. tostring(tileY*map.data.scale)
     else
-        message = "Clicked on " .. tostring(tileX*16) .. ", " .. tostring(tileY*16)
+        message = "Clicked on " .. tostring(tileX*map.data.scale) .. ", " .. tostring(tileY*map.data.scale)
     end
     renderInterface()
 end
