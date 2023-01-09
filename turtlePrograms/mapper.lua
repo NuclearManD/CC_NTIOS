@@ -23,7 +23,7 @@ local BLOCK_COLORS = {
     ["minecraft:snow"] = colors.white,
     ["minecraft:snow_block"] = colors.white,
     ["minecraft:log"] = colors.brown,
-    -- Usually I don't want to use gray bc it messes up the UI, but for artificial structures I make an exception.
+    -- Usually I don't want to use gray bc it messes up the UI, but for artificial structures I make an exception.  Colors gray (not light gray) and purple generally reserved for artifical structures.
     ["minecraft:stonebrick"] = colors.gray
 }
 local x, y, z = gps.locate()
@@ -45,12 +45,12 @@ end
 
 local args = { ... }
 if #args < 1 then
-    print("Usage: mapper <distance> [map=/ntios/world.map]")
+    print("Usage: mapper <radius> [map=/ntios/world.map]")
     return
 end
 
-local distance = tonumber(args[1])
-if distance < 1 then
+local radius = tonumber(args[1])
+if radius < 1 then
     print("Distance must be positive")
     return
 end
@@ -117,7 +117,6 @@ function addToPosition(dx, dy, dz)
         x = x + (orientation-2)*(orientation%2)*dx + (orientation-3)*((orientation+1)%2)*dz
         z = z + (orientation-3)*((orientation+1)%2)*dx + (orientation-2)*(orientation%2)*dz
         y = y + dy
-        print("p=("..tostring(x)..", "..tostring(y)..", "..tostring(z)..")")
     end
 end
 
