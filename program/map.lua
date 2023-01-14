@@ -167,7 +167,7 @@ function promptForPosition(prompt)
     term.setBackgroundColor(colors.blue)
     term.setTextColor(colors.gray)
     local yStr = read()
-    local y = tonumber(y)
+    local y = tonumber(yStr)
     if y == nil then
         if yStr == "gps" then
             y = yStr
