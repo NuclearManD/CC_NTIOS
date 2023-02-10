@@ -12,6 +12,12 @@ function isGangue(blockInfo)
         return true
     elseif blockInfo.name == "minecraft:stone_brick_stairs" then
         return true
+    elseif blockInfo.name == "minecraft:netherrack" then
+        return true
+    elseif blockInfo.name == "minecraft:basalt" then
+        return true
+    elseif blockInfo.name == "minecraft:soul_soil" then
+        return true
     elseif blockInfo.name == "minecraft:grass" then
         return true
     end
